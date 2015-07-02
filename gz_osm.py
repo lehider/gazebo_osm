@@ -37,38 +37,49 @@ if TIMER:
     tic()
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-f', '--outFile',
-                    help='Output file name', type=str, default='outFile.sdf')
-parser.add_argument('-o', '--osmFile', help='Name of the osm file generated',
+
+
+
+
+parser.add_argument('-n', '--name',
+                    help='Output name for all file extensions generated', 
+                    type=str, 
+                    default='map')
+
+parser.add_argument('--sdf',
+                    help='Output file name', 
+                    action='store_true')
+
+parser.add_argument('-o', '--fromOsm', 
+                    help='Path to the Input osm file, i.e  path/to/map.osm',
                     type=str,
                     default='map.osm')
-parser.add_argument('-O', '--inputOsmFile', help='Name of the Input osm file',
-                    type=str,
-                    default='')
+
 parser.add_argument('-i', '--imageFile',
-                    help='Generate and name .png image of the selected areas',
-                    type=str,
-                    default='')
+                    help='Generate roads to PNG image ',
+                    action='store_true')
+
 parser.add_argument('-d', '--directory',
                     help='Output directory',
                     type=str,
-                    default='./')
-parser.add_argument('-l', '--lanes',
-                    help='export image with lanes',
+                    default='output/')
+
+parser.add_argument('-dbg', '--debug',
+                    help='Debug Mode. Gazebo may take a while to load with this.',
                     action='store_true')
+
+parser.add_argument('-l', '--lanes',
+                    help='Export world/image with left and right road lanes',
+                    action='store_true')
+
 parser.add_argument('-B', '--boundingbox',
                     help=('Give the bounding box for the area\n' +
                           'Format: MinLon MinLat MaxLon MaxLat'),
                     nargs='*',
-                    type=float,
-                    default=[-122.0129, 37.3596, -122.0102, 37.3614])
+                    type=float)
 
 parser.add_argument('-r', '--roads',
                     help='Display Roads',
-                    action='store_true')
-
-parser.add_argument('-dbg', '--debug',
-                    help='Debug Mode. Gazebo may take a while to load with this.',
                     action='store_true')
 
 parser.add_argument('-m', '--models',
@@ -82,9 +93,22 @@ parser.add_argument('-b', '--buildings',
 parser.add_argument('-a', '--displayAll',
                     help='Display roads and models',
                     action='store_true')
+
 parser.add_argument('--interactive',
                     help='Starts the interactive version of the program',
                     action='store_true')
+
+useOsmInput = True
+
+osmInputFileName = ''
+
+osmOutputFileName = ''
+pngOutputFileName = ''
+sdfOutputFileName = ''
+
+stageYamlFileName = ''
+stageWorldFileName = ''
+
 
 args = parser.parse_args()
 
@@ -108,8 +132,19 @@ if not(args.roads or args.models or args.buildings) or args.displayAll:
 if not os.path.exists(args.directory):
     os.makedirs(args.directory)
 
-args.osmFile = args.directory + args.osmFile
-args.outFile = args.directory + args.outFile
+
+if not args.name:
+    print ('Must specify output file name!')
+    print ('Ex:   -n myFileName ')
+    exit()
+elif args.boundingbox:
+    useOsmInput = False
+    print ('Using Bounding Box.')
+else:
+    useOsmInput = True
+    osmInputFileName = args.directory + args.fromOsm
+    print ('Using OSM input file.')
+
 
 osmDictionary = {}
 
@@ -156,19 +191,36 @@ if args.interactive:
     if option != 'N':
         args.imageFile = 'map.png'
 
-if args.inputOsmFile:
-    f = open(args.inputOsmFile, 'r')
+print (' _______________________________')
+print ('|')
+print ('| Getting the osm data ... ')
+
+if useOsmInput:
+    print ('file name: ' + str(osmInputFileName))
+    f = open(osmInputFileName, 'r')
     root = etree.fromstring(f.read())
     f.close()
     args.boundingbox = [float(root[0].get('minlon')),
                         float(root[0].get('minlat')),
                         float(root[0].get('maxlon')),
                         float(root[0].get('maxlat'))]
-print (' _______________________________')
-print ('|')
-print ('| Downloading the osm data ... ')
-osmDictionary = getOsmFile(args.boundingbox,
-                           args.osmFile, args.inputOsmFile)
+
+    osmOutputFileName = args.directory + args.name + '.osm' 
+    osmDictionary = getOsmFile(args.boundingbox, osmOutputFileName, osmInputFileName)
+else:
+    osmOutputFileName = args.directory + args.name + '.osm'
+    osmDictionary = getOsmFile(args.boundingbox, osmOutputFileName)
+
+
+
+
+# print ('Osm output name: ' + str(osmOutputFileName))
+
+# if useOsmInput:
+#     print ('Osm output name: ' + str(osmOutputFileName))
+#     osmDictionary = getOsmFile(args.boundingbox, osmOutputFileName, args.fromOsm)
+# else:
+#     osmDictionary = getOsmFile(args.boundingbox, osmOutputFileName)
 
 # if args.imageFile:
 #     if TIMER:
@@ -350,15 +402,19 @@ for idx, road in enumerate(roadPointWidthMap.keys()):
 print ('|')
 print ('|-----------------------------------')
 print ('| Generating the SDF world file...')
-sdfFile.writeToFile(args.outFile)
+sdfOutputFileName = args.directory + args.name + '.sdf'
+sdfFile.writeToFile(sdfOutputFileName)
 
 # if args.imageFile:
 print ('| Generating Image File...')
 print ('|-----------------------------------')
 print ('|')
 size = osmRoads.getMapSize()
-#    args.imageFile = args.directory + args.imageFile
+pngOutputFileName = args.directory + args.name + '.png'
 lanes.makeImage(size, 5, roadLaneSegments, centerLaneSegments)
+
+lanes.saveImage(pngOutputFileName)
+lanes.showImage(pngOutputFileName)
 
 print ('| Lat Center  = '+ str(osmRoads.getLat()))
 print ('| Lon Center  = '+ str(osmRoads.getLon()))

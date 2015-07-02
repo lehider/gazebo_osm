@@ -15,6 +15,8 @@ class LaneBoundaries:
 		self.img = 0
 		self.roadWidth = 6 #default 6 meters from left to right lane
 
+		self.finalImage = 0
+
 	# Code modeled off Road2d.cc from the Gazebo BitBucket
 	def createLanes(self, roadWidth):
 
@@ -252,9 +254,14 @@ class LaneBoundaries:
 		imgGreyScale = cv2.bitwise_not( thresh )
 
 		imgGreyScale = cv2.transpose(imgGreyScale)
-		imgGreyScale = cv2.flip(imgGreyScale,flipCode=-1)
+		self.finalImage = cv2.flip(imgGreyScale,flipCode=-1)
 
-		cv2.imwrite('map.png',imgGreyScale)
+
+	def saveImage(self, imageFileName):
+		cv2.imwrite(imageFileName,self.finalImage)
 		cv2.waitKey(0)
 		cv2.destroyAllWindows()
-		os.system('xdg-open ' + 'map.png')
+
+
+	def showImage(self, imageFileName):
+		os.system('xdg-open ' + imageFileName)

@@ -12,17 +12,19 @@ import urllib2
 import osmapi
 
 
-def getOsmFile(box, outputFile='map.osm', inputOsmFile=''):
+def getOsmFile(box, outputFile, inputOsmFile=''):
     '''downloads the data file for the specified bounding box
        stores the file as outputFile, if inputOsmFile is not specified
        and also converts the data in the form of a dictionary'''
     if not box and not inputOsmFile:
         return None
 
+
     dataDict = {}
-    if inputOsmFile:
-        outputFile = inputOsmFile
-    else:
+    if inputOsmFile == '':
+        print ('No input. Making Output File.')
+
+        print "Getting URL"
         try:
             urlString = 'http://api.openstreetmap.org/api/0.6/map?bbox=' + str(box)[1:-1].replace(" ", "")
             print urlString
@@ -36,6 +38,10 @@ def getOsmFile(box, outputFile='map.osm', inputOsmFile=''):
         osm.write(osmFile.read())
 
         osm.close()
+    else:
+        osmFile = inputOsmFile
+
+    print "Osm File: " + outputFile
 
     osmRead = open(outputFile, 'r')
 
