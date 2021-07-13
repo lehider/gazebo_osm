@@ -9,6 +9,7 @@ from dict2sdf import GetSDF
 from osm2dict import Osm2Dict
 from getMapImage import getMapImage
 from getOsmFile import getOsmFile
+from ParseOsmFile import ParseOsmFile
 from roadSmoothing import SmoothRoad
 from laneBoundaries import LaneBoundaries
 from catmull_rom_spline import catmull_rom
@@ -173,12 +174,9 @@ if args.inputOsmFile:
                         float(root[0].get('minlat')),
                         float(root[0].get('maxlon')),
                         float(root[0].get('maxlat'))]
-print (' _______________________________')
-print ('|')
-print ('| Downloading the osm data ... ')
-osmDictionary = getOsmFile(args.boundingbox,
-                           args.osmFile, args.inputOsmFile)
 
+#osmDictionary = getOsmFile(args.boundingbox,args.osmFile, args.inputOsmFile)
+osmDictionary=ParseOsmFile(args.osmFile, args.inputOsmFile)
 # if args.imageFile:
 #     if TIMER:
 #         tic()
@@ -189,6 +187,7 @@ osmDictionary = getOsmFile(args.boundingbox,
 #         toc()
 
 #Initialize the class
+print(osmDictionary)
 osmRoads = Osm2Dict(args.boundingbox[0], args.boundingbox[1],
                     args.boundingbox[2], args.boundingbox[3],
                     osmDictionary, flags)
